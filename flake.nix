@@ -1,139 +1,249 @@
 {
   description = "majority-multisign";
 
-  inputs.haskell-nix.url = "github:input-output-hk/haskell.nix";
-  inputs.nixpkgs.follows = "haskell-nix/nixpkgs-unstable";
-  inputs.haskell-nix.inputs.nixpkgs.follows = "haskell-nix/nixpkgs-2105";
-  inputs.plutus.url = "github:input-output-hk/plutus"; # used for libsodium-vrf
+  inputs = {
+    haskell-nix.url = github:input-output-hk/haskell.nix;
+    nixpkgs.follows = "haskell-nix/nixpkgs";
+    haskell-nix-extra-hackage = {
+      url = github:mlabs-haskell/haskell-nix-extra-hackage/separate-hackages;
+      inputs = {
+        haskell-nix.follows = "haskell-nix";
+        nixpkgs.follows = "nixpkgs";
+      };
+    };
 
-  outputs = { self, nixpkgs, haskell-nix, plutus }:
+    cardano-base = {
+      url = github:input-output-hk/cardano-base;
+      flake = false;
+    };
+    cardano-crypto = {
+      url = github:input-output-hk/cardano-crypto;
+      flake = false;
+    };
+    cardano-ledger = {
+      url = github:input-output-hk/cardano-ledger;
+      flake = false;
+    };
+    cardano-prelude = {
+      url = github:input-output-hk/cardano-prelude;
+      flake = false;
+    };
+    cardano-wallet = {
+      url = github:input-output-hk/cardano-wallet;
+      flake = false;
+    };
+    goblins = {
+      url = github:input-output-hk/goblins;
+      flake = false;
+    };
+    iohk-monitoring-framework = {
+      url = github:input-output-hk/iohk-monitoring-framework;
+      flake = false;
+    };
+    io-sim = {
+      url = github:input-output-hk/io-sim;
+      flake = false;
+    };
+    ouroboros-network = {
+      url = github:input-output-hk/ouroboros-network;
+      flake = false;
+    };
+    plutus = {
+      url = github:input-output-hk/plutus;
+      flake = false;
+    };
+    plutus-apps = {
+      url = github:input-output-hk/plutus-apps;
+      flake = false;
+    };
+    quickcheck-dynamic = {
+      url = github:input-output-hk/quickcheck-dynamic;
+      flake = false;
+    };
+    typed-protocols = {
+      url = github:input-output-hk/typed-protocols;
+      flake = false;
+    };
+    Win32-network = {
+      url = github:input-output-hk/Win32-network;
+      flake = false;
+    };
+  };
+
+  outputs = inputs@{ haskell-nix-extra-hackage, nixpkgs, haskell-nix, ... }:
     let
       supportedSystems =
         [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
 
       perSystem = nixpkgs.lib.genAttrs supportedSystems;
 
-      nixpkgsFor = system:
-        import nixpkgs {
-          inherit system;
-          overlays = [ haskell-nix.overlay ];
-          inherit (haskell-nix) config;
-        };
+      pkgsFor = system: import nixpkgs {
+        inherit system;
+        inherit (haskell-nix) config;
+        overlays = overlaysFor system;
+      };
 
-      projectFor = system:
-        let
-          deferPluginErrors = true;
-          pkgs = nixpkgsFor system;
+      compiler-nix-name = "ghc8107";
+  
+      overlayFor = system: final: prev:
+        let myHackages = haskell-nix-extra-hackage.mkHackagesFor system compiler-nix-name
+              (with inputs; [
+                "${cardano-base}/base-deriving-via"
+                "${cardano-base}/binary"
+                "${cardano-base}/binary/test"
+                "${cardano-base}/cardano-crypto-class"
+                "${cardano-base}/cardano-crypto-praos"
+                "${cardano-base}/cardano-crypto-tests"
+                "${cardano-base}/measures"
+                "${cardano-base}/orphans-deriving-via"
+                "${cardano-base}/slotting"
+                "${cardano-base}/strict-containers"
 
-          fakeSrc = pkgs.runCommand "real-source" { } ''
-            cp -rT ${self} $out
-            chmod u+w $out/cabal.project
-            cat $out/cabal-haskell.nix.project >> $out/cabal.project
-          '';
+                cardano-crypto
 
-          sources = import ./nix/sources.nix { };
-        in (nixpkgsFor system).haskell-nix.cabalProject' {
-          src = fakeSrc.outPath;
-          compiler-nix-name = "ghc8107";
-          cabalProjectFileName = "cabal.project";
-          modules = [{
-            packages = {
-              marlowe.flags.defer-plugin-errors = deferPluginErrors;
-              plutus-use-cases.flags.defer-plugin-errors = deferPluginErrors;
-              plutus-ledger.flags.defer-plugin-errors = deferPluginErrors;
-              plutus-contract.flags.defer-plugin-errors = deferPluginErrors;
-              cardano-crypto-praos.components.library.pkgconfig =
-                nixpkgs.lib.mkForce
-                [ [ (import plutus { inherit system; }).pkgs.libsodium-vrf ] ];
-              cardano-crypto-class.components.library.pkgconfig =
-                nixpkgs.lib.mkForce
-                [ [ (import plutus { inherit system; }).pkgs.libsodium-vrf ] ];
-              cardano-wallet-core.components.library.build-tools = [
-                (import plutus {
-                  inherit system;
-                }).pkgs.buildPackages.buildPackages.gitMinimal
-              ];
-              cardano-config.components.library.build-tools = [
-                (import plutus {
-                  inherit system;
-                }).pkgs.buildPackages.buildPackages.gitMinimal
-              ];
+                "${cardano-ledger}/eras/alonzo/impl"
+                "${cardano-ledger}/eras/alonzo/test-suite"
+                "${cardano-ledger}/eras/babbage/impl"
+                "${cardano-ledger}/eras/babbage/test-suite"
+                "${cardano-ledger}/eras/byron/chain/executable-spec"
+                "${cardano-ledger}/eras/byron/ledger/executable-spec"
+                "${cardano-ledger}/eras/byron/ledger/impl"
+                "${cardano-ledger}/eras/byron/ledger/impl/test"
+                "${cardano-ledger}/eras/byron/crypto"
+                "${cardano-ledger}/eras/byron/crypto/test"
+                "${cardano-ledger}/eras/shelley/impl"
+                "${cardano-ledger}/eras/shelley/test-suite"
+                "${cardano-ledger}/eras/shelley-ma/impl"
+                "${cardano-ledger}/eras/shelley-ma/test-suite"
+                "${cardano-ledger}/libs/cardano-ledger-core"
+                "${cardano-ledger}/libs/cardano-ledger-pretty"
+                "${cardano-ledger}/libs/cardano-ledger-test"
+                "${cardano-ledger}/libs/cardano-protocol-tpraos"
+                "${cardano-ledger}/libs/plutus-preprocessor"
+                "${cardano-ledger}/libs/ledger-state"
+                "${cardano-ledger}/libs/non-integral"
+                "${cardano-ledger}/libs/small-steps"
+                "${cardano-ledger}/libs/small-steps-test"
+                "${cardano-ledger}/libs/cardano-data"
+                "${cardano-ledger}/libs/set-algebra"
+                "${cardano-ledger}/libs/vector-map"
+
+                "${cardano-prelude}/cardano-prelude"
+                "${cardano-prelude}/cardano-prelude-test"
+
+                "${cardano-wallet}/lib/cli"
+                "${cardano-wallet}/lib/core"
+                "${cardano-wallet}/lib/core-integration"
+                "${cardano-wallet}/lib/dbvar"
+                "${cardano-wallet}/lib/launcher"
+                "${cardano-wallet}/lib/numeric"
+                "${cardano-wallet}/lib/shelley"
+                "${cardano-wallet}/lib/strict-non-empty-containers"
+                "${cardano-wallet}/lib/test-utils"
+                "${cardano-wallet}/lib/text-class"
+
+                goblins
+
+                "${iohk-monitoring-framework}/contra-tracer"
+                "${iohk-monitoring-framework}/iohk-monitoring"
+                "${iohk-monitoring-framework}/tracer-transformers"
+
+                "${io-sim}/io-classes"
+                "${io-sim}/io-sim"
+                "${io-sim}/strict-stm"
+
+                "${ouroboros-network}/ouroboros-network-testing"
+                "${ouroboros-network}/monoidal-synchronisation"
+                "${ouroboros-network}/network-mux"
+                "${ouroboros-network}/ouroboros-network-framework"
+                "${ouroboros-network}/ouroboros-network"
+                "${ouroboros-network}/ouroboros-network-testing"
+                "${ouroboros-network}/ouroboros-consensus"
+                "${ouroboros-network}/ouroboros-consensus-byron"
+                "${ouroboros-network}/ouroboros-consensus-byron-test"
+                "${ouroboros-network}/ouroboros-consensus-byronspec"
+                "${ouroboros-network}/ouroboros-consensus-cardano"
+                "${ouroboros-network}/ouroboros-consensus-cardano-test"
+                "${ouroboros-network}/ouroboros-consensus-mock"
+                "${ouroboros-network}/ouroboros-consensus-mock-test"
+                "${ouroboros-network}/ouroboros-consensus-protocol"
+                "${ouroboros-network}/ouroboros-consensus-shelley"
+                "${ouroboros-network}/ouroboros-consensus-shelley-test"
+                "${ouroboros-network}/ouroboros-consensus-test"
+                "${ouroboros-network}/ntp-client"
+                "${ouroboros-network}/cardano-client"
+
+                "${plutus}/plutus-benchmark"
+                "${plutus}/plutus-conformance"
+                "${plutus}/plutus-core"
+                "${plutus}/plutus-errors"
+                "${plutus}/plutus-ledger-api"
+                "${plutus}/plutus-metatheory"
+                "${plutus}/plutus-tx"
+                "${plutus}/plutus-tx-plugin"
+                "${plutus}/prettyprinter-configurable"
+                "${plutus}/word-array"
+
+                "${plutus-apps}/freer-extras"
+                "${plutus-apps}/playground-common"
+                "${plutus-apps}/plutus-chain-index"
+                "${plutus-apps}/plutus-chain-index-core"
+                "${plutus-apps}/plutus-contract"
+                "${plutus-apps}/plutus-example"
+                "${plutus-apps}/plutus-contract-certification"
+                "${plutus-apps}/plutus-ledger"
+                "${plutus-apps}/plutus-ledger-constraints"
+                "${plutus-apps}/plutus-pab"
+                "${plutus-apps}/plutus-pab-executables"
+                "${plutus-apps}/plutus-playground-server"
+                "${plutus-apps}/plutus-script-utils"
+                "${plutus-apps}/plutus-tx-constraints"
+                "${plutus-apps}/plutus-use-cases"
+                "${plutus-apps}/plutus-streaming"
+
+                quickcheck-dynamic
+
+                "${typed-protocols}/typed-protocols"
+                "${typed-protocols}/typed-protocols-cborg"
+                "${typed-protocols}/typed-protocols-examples"
+
+                Win32-network
+              ]);
+         in
+        {
+          majority-multisign = final.haskell-nix.cabalProject' {
+            src = ./majority-multisign;
+            inherit compiler-nix-name;
+            index-state = "2021-08-14T00:00:00Z";
+
+            configureArgs = ''
+              --allow-newer=size-based:template-haskell --constraint="random >= 1.2.1"
+            '';
+
+            inherit (myHackages) extra-hackages extra-hackage-tarballs modules;
+
+            shell = {
+              exactDeps = true;
+              tools = { cabal-install = {}; };
             };
-          }];
-          shell = {
-            withHoogle = true;
-
-            exactDeps = true;
-
-            # We use the ones from Nixpkgs, since they are cached reliably.
-            # Eventually we will probably want to build these with haskell.nix.
-            nativeBuildInputs =
-              [ pkgs.cabal-install pkgs.hlint pkgs.haskellPackages.fourmolu ];
-
-            additional = ps: [
-              #ps.tasty-plutus
-              #ps.quickcheck-plutus-instances
-              #ps.plutus-collection
-              #ps.plutus-laws
-              #ps.plutus-golden
-
-              ps.base-deriving-via
-              ps.cardano-addresses
-              ps.cardano-addresses-cli
-              ps.cardano-binary
-              ps.cardano-crypto
-              ps.cardano-crypto-class
-              ps.cardano-crypto-praos
-              ps.cardano-crypto-wrapper
-              ps.cardano-ledger-alonzo
-              ps.cardano-ledger-byron
-              ps.cardano-ledger-core
-              ps.cardano-ledger-pretty
-              ps.cardano-ledger-shelley
-              ps.cardano-ledger-shelley-ma
-              ps.cardano-prelude
-              ps.cardano-slotting
-              ps.flat
-              ps.freer-extras
-              ps.goblins
-              ps.measures
-              ps.orphans-deriving-via
-              ps.playground-common
-              ps.plutus-contract
-              ps.plutus-chain-index
-              ps.plutus-core
-              ps.plutus-ledger
-              ps.plutus-ledger-api
-              ps.plutus-pab
-              ps.plutus-playground-server
-              ps.plutus-tx
-              ps.plutus-tx-plugin
-              ps.plutus-use-cases
-              ps.prettyprinter-configurable
-              ps.quickcheck-dynamic
-              ps.Win32-network
-              ps.word-array
-            ];
           };
-          sha256map = pkgs.lib.foldr (data: tab:
-            with data;
-            tab // {
-              "https://github.com/${owner}/${repo}"."${rev}" = sha256;
-              "https://github.com/${owner}/${repo}.git"."${rev}" = sha256;
-            }) { } (pkgs.lib.attrValues sources);
         };
-    in {
-      project = perSystem projectFor;
-      flake = perSystem (system: (projectFor system).flake { });
 
-      # this could be done automatically, but would reduce readability
-      packages = perSystem (system: self.flake.${system}.packages);
-      checks = perSystem (system: self.flake.${system}.checks);
-      check = perSystem (system:
-        (nixpkgsFor system).runCommand "combined-test" {
-          nativeBuildInputs = builtins.attrValues self.checks.${system};
-        } "touch $out");
-      apps = perSystem (system: self.flake.${system}.apps);
-      devShell = perSystem (system: self.flake.${system}.devShell);
+        overlaysFor = system: [ haskell-nix.overlay (overlayFor system) ];
+    in {
+      packages = perSystem (system: {
+        default = ((pkgsFor system).majority-multisign.flake {}).packages."majority-multisign:lib:majority-multisign";
+      });
+
+      # checks = perSystem (system: self.flake.${system}.checks);
+      # check = perSystem (system:
+      #   (nixpkgsFor system).runCommand "combined-test" {
+      #     nativeBuildInputs = builtins.attrValues self.checks.${system};
+      #   } "touch $out");
+      devShells = perSystem (system: {
+        default = ((pkgsFor system).majority-multisign.flake {}).devShell;
+      });
+
+      overlays = perSystem (system: { default = overlayFor system; });
     };
 }
