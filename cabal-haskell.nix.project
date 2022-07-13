@@ -1,6 +1,6 @@
 source-repository-package
   type: git
-  location: https://github.com/mlabs-haskell/plutus-apps.git
+  location: https://github.com/input-output-hk/plutus-apps.git
   subdir:
     doc
     freer-extras
@@ -16,36 +16,36 @@ source-repository-package
     plutus-use-cases
     quickcheck-dynamic
     web-ghc
-  tag: 82c0725c4d05398ae76d71927cc60aa23db1a11d
+  tag: 7f543e21d4945a2024e46c572303b9c1684a5832
 
 -- New testing functionality
-source-repository-package
-  type: git
-  location: https://github.com/gege251/plutus-extra.git
-  tag: 54418f7539dacd299b5219ded18a78ebef357112
-  subdir:
-    plutus-collection
-    plutus-context-builder
-    plutus-deriving
-    plutus-extra
-    plutus-golden
-    plutus-laws
-    plutus-numeric
-    plutus-pretty
-    plutus-size-check
-    quickcheck-plutus-instances
-    tasty-plutus
-
-constraints:
-  docopt >= 0.7.0.6,
-  jwt >= 0.11,
-
-allow-newer:
-  MissingH:random,
-  size-based:template-haskell,
-  plutus-pab-executables:docopt,
-  plutus-size-check:cardano-api,
-  tasty-plutus:all,
+--source-repository-package
+--  type: git
+--  location: https://github.com/Liqwid-Labs/plutus-extra.git
+--  tag: b456bb86ee809eccf6b79ea99d95b318d9a70c95
+--  subdir:
+--    plutus-collection
+--    plutus-context-builder
+--    plutus-deriving
+--    plutus-extra
+--    plutus-golden
+--    plutus-laws
+--    plutus-numeric
+--    -- plutus-pretty
+--    plutus-size-check
+--    quickcheck-plutus-instances
+--    --tasty-plutus
+--
+--constraints:
+--  docopt >= 0.7.0.6,
+--  jwt >= 0.11,
+--
+--allow-newer:
+--  MissingH:random,
+--  size-based:template-haskell,
+--  plutus-pab-executables:docopt,
+--  plutus-size-check:cardano-api,
+--  tasty-plutus:all,
 
 source-repository-package
   type: git
@@ -117,7 +117,7 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/plutus
-  tag: 1a3c3a761cf048371c52a34b004f8b3fcf0dab43
+  tag: cc72a56eafb02333c96f662581b57504f8f8992f
   subdir:
     plutus-core
     plutus-ledger-api

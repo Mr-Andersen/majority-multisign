@@ -61,34 +61,38 @@ flag defer-plugin-errors
 library
   import:          lang
   exposed-modules:
-    MajorityMultiSign
+    Plutus.Contracts.Scripts1
+    Plutus.Contracts.Currency
     MajorityMultiSign.Contracts
     MajorityMultiSign.OnChain
     MajorityMultiSign.Schema
 
   build-depends:
     , aeson                      ^>=1.5.6.0
+    , bytestring
     , cardano-prelude
     , containers
+    , cardano-api
     , extra
     , freer-simple               ^>=1.2.1.1
     , lens                       ^>=4.19.2
     , openapi3                   <3.2
     , playground-common
-    , plutus-collection          >=1.0     && <2.2
+    , plutus-core
     , plutus-contract
     , plutus-ledger
     , plutus-ledger-api
     , plutus-ledger-constraints
-    , plutus-numeric
-    , plutus-pab
-    , plutus-pretty
+    --, plutus-numeric
+    --, plutus-pab
+    --, plutus-pretty
     , plutus-tx
     , plutus-tx-plugin
-    , plutus-use-cases
+    --, plutus-use-cases
     , prettyprinter              ^>=1.7.0
     , recursion-schemes          >=5       && <6
     , row-types                  ^>=1.0.1.0
+    , serialise
     , text
 
   hs-source-dirs:  src

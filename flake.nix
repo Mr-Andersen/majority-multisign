@@ -71,11 +71,11 @@
               [ pkgs.cabal-install pkgs.hlint pkgs.haskellPackages.fourmolu ];
 
             additional = ps: [
-              ps.tasty-plutus
-              ps.quickcheck-plutus-instances
-              ps.plutus-collection
-              ps.plutus-laws
-              ps.plutus-golden
+              #ps.tasty-plutus
+              #ps.quickcheck-plutus-instances
+              #ps.plutus-collection
+              #ps.plutus-laws
+              #ps.plutus-golden
 
               ps.base-deriving-via
               ps.cardano-addresses
