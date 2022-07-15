@@ -12,6 +12,10 @@
       };
     };
 
+    cardano-addresses = {
+      url = github:input-output-hk/cardano-addresses;
+      flake = false;
+    };
     cardano-base = {
       url = github:input-output-hk/cardano-base;
       flake = false;
@@ -21,7 +25,11 @@
       flake = false;
     };
     cardano-ledger = {
-      url = github:input-output-hk/cardano-ledger;
+      url = github:input-output-hk/cardano-ledger/node/1.33.0; #31276d4d47cf4e6a100e45958dbe93af5aed9208;
+      flake = false;
+    };
+    cardano-node = {
+      url = github:input-output-hk/cardano-node/1.33.0; #41afffd647fd92b731ebe96aaadf1dadfaaceba8;
       flake = false;
     };
     cardano-prelude = {
@@ -44,8 +52,12 @@
       url = github:input-output-hk/io-sim;
       flake = false;
     };
+    optparse-applicative-fork = {
+      url = github:input-output-hk/optparse-applicative;
+      flake = false;
+    };
     ouroboros-network = {
-      url = github:input-output-hk/ouroboros-network;
+      url = github:input-output-hk/ouroboros-network/236a0a289dd58ea510c77e9ba14b7465d117cb5e;
       flake = false;
     };
     plutus = {
@@ -53,7 +65,7 @@
       flake = false;
     };
     plutus-apps = {
-      url = github:input-output-hk/plutus-apps;
+      url = github:input-output-hk/plutus-apps/27820e59a8239ea87b0b3c83c5bd37292de25667;
       flake = false;
     };
     quickcheck-dynamic = {
@@ -88,6 +100,8 @@
       overlayFor = system: final: prev:
         let myHackages = haskell-nix-extra-hackage.mkHackagesFor system compiler-nix-name
               (with inputs; [
+                "${cardano-addresses}/core"
+
                 "${cardano-base}/base-deriving-via"
                 "${cardano-base}/binary"
                 "${cardano-base}/binary/test"
@@ -103,8 +117,8 @@
 
                 "${cardano-ledger}/eras/alonzo/impl"
                 "${cardano-ledger}/eras/alonzo/test-suite"
-                "${cardano-ledger}/eras/babbage/impl"
-                "${cardano-ledger}/eras/babbage/test-suite"
+                # "${cardano-ledger}/eras/babbage/impl"
+                # "${cardano-ledger}/eras/babbage/test-suite"
                 "${cardano-ledger}/eras/byron/chain/executable-spec"
                 "${cardano-ledger}/eras/byron/ledger/executable-spec"
                 "${cardano-ledger}/eras/byron/ledger/impl"
@@ -126,7 +140,9 @@
                 "${cardano-ledger}/libs/small-steps-test"
                 "${cardano-ledger}/libs/cardano-data"
                 "${cardano-ledger}/libs/set-algebra"
-                "${cardano-ledger}/libs/vector-map"
+                # "${cardano-ledger}/libs/vector-map"
+
+                "${cardano-node}/cardano-api"
 
                 "${cardano-prelude}/cardano-prelude"
                 "${cardano-prelude}/cardano-prelude-test"
@@ -151,6 +167,8 @@
                 "${io-sim}/io-classes"
                 "${io-sim}/io-sim"
                 "${io-sim}/strict-stm"
+
+                optparse-applicative-fork
 
                 "${ouroboros-network}/ouroboros-network-testing"
                 "${ouroboros-network}/monoidal-synchronisation"
@@ -196,10 +214,7 @@
                 "${plutus-apps}/plutus-pab"
                 "${plutus-apps}/plutus-pab-executables"
                 "${plutus-apps}/plutus-playground-server"
-                "${plutus-apps}/plutus-script-utils"
-                "${plutus-apps}/plutus-tx-constraints"
                 "${plutus-apps}/plutus-use-cases"
-                "${plutus-apps}/plutus-streaming"
 
                 quickcheck-dynamic
 
@@ -214,10 +229,10 @@
           majority-multisign = final.haskell-nix.cabalProject' {
             src = ./majority-multisign;
             inherit compiler-nix-name;
-            index-state = "2021-08-14T00:00:00Z";
+            index-state = "2022-07-13T00:00:00Z";
 
             configureArgs = ''
-              --allow-newer=size-based:template-haskell --constraint="random >= 1.2.1"
+              --allow-newer=size-based:template-haskell
             '';
 
             inherit (myHackages) extra-hackages extra-hackage-tarballs modules;
