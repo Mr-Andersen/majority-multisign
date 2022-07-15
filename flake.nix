@@ -1,10 +1,19 @@
 {
   description = "majority-multisign";
 
-  inputs.haskell-nix.url = "github:input-output-hk/haskell.nix";
-  inputs.nixpkgs.follows = "haskell-nix/nixpkgs-unstable";
-  inputs.haskell-nix.inputs.nixpkgs.follows = "haskell-nix/nixpkgs-2105";
-  inputs.plutus.url = "github:input-output-hk/plutus"; # used for libsodium-vrf
+  inputs = {
+    haskell-nix.url = "github:input-output-hk/haskell.nix";
+    nixpkgs.follows = "haskell-nix/nixpkgs-unstable";
+    # haskell-nix.inputs.nixpkgs.follows = "haskell-nix/nixpkgs-2105";
+    plutus = {
+      url = "github:input-output-hk/plutus/v1.0.0";
+      # inputs = {
+      #   haskell-nix.follows = "haskell-nix";
+      #   nixpkgs.follows = "nixpkgs";
+      # };
+      flake = false;
+    };
+  };
 
   outputs = { self, nixpkgs, haskell-nix, plutus }:
     let

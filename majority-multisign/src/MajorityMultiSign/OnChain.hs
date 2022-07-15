@@ -26,9 +26,9 @@ import MajorityMultiSign.Schema (
   getMinSigners,
   maximumSigners,
  )
-import Plutus.V1.Ledger.Api (TxOut (txOutDatumHash, txOutValue))
-import Plutus.V1.Ledger.Contexts (TxInInfo (txInInfoResolved), TxInfo (txInfoInputs), findDatumHash)
-import Plutus.V1.Ledger.Value (assetClassValueOf)
+import Plutus.V2.Ledger.Api (TxOut (txOutDatumHash, txOutValue))
+import Plutus.V2.Ledger.Contexts (TxInInfo (txInInfoResolved), TxInfo (txInfoInputs), findDatumHash)
+import Plutus.V2.Ledger.Value (assetClassValueOf)
 import PlutusTx qualified
 --import PlutusTx.List.Natural qualified as Natural
 --import PlutusTx.Natural (Natural)

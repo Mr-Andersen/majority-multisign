@@ -9,5 +9,8 @@ write-ghc-environment-files: never
 tests: true
 benchmarks: true
 documentation: false
-haddoc-html: false
+haddock-html: false
+
+constraints: random >= 1.2.0
+allow-newer: MissingH:random
 
