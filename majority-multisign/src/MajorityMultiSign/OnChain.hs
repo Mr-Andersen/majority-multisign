@@ -13,12 +13,9 @@ module MajorityMultiSign.OnChain (
 ) where
 
 import Data.List.Extra (firstJust)
-import Ledger (Address, Datum (Datum), PaymentPubKeyHash (unPaymentPubKeyHash), ScriptContext (scriptContextTxInfo), txSignedBy)
-import Ledger qualified
-import Ledger.Scripts qualified as Scripts
-import Ledger.Typed.Scripts qualified as TypedScripts
+import Ledger (PaymentPubKeyHash (unPaymentPubKeyHash))
 import MajorityMultiSign.Schema (
-  MajorityMultiSign,
+  -- MajorityMultiSign,
   MajorityMultiSignDatum (MajorityMultiSignDatum, signers),
   MajorityMultiSignIdentifier (MajorityMultiSignIdentifier, asset),
   MajorityMultiSignRedeemer (UpdateKeysAct, UseSignaturesAct),
@@ -26,9 +23,13 @@ import MajorityMultiSign.Schema (
   getMinSigners,
   maximumSigners,
  )
-import Plutus.V2.Ledger.Api (TxOut (txOutDatumHash, txOutValue))
-import Plutus.V2.Ledger.Contexts (TxInInfo (txInInfoResolved), TxInfo (txInfoInputs), findDatumHash)
-import Plutus.V2.Ledger.Value (assetClassValueOf)
+import Plutus.Script.Utils.V2.Address (mkValidatorAddress)
+import Plutus.Script.Utils.V2.Scripts (ValidatorHash)
+import Plutus.Script.Utils.V2.Scripts qualified as Scripts (validatorHash)
+import Plutus.Script.Utils.V2.Scripts.Validators (mkUntypedValidator)
+import Plutus.V1.Ledger.Value (assetClassValueOf)
+import Plutus.V2.Ledger.Api (Address, Datum(Datum), OutputDatum(OutputDatum), Validator, ScriptContext (scriptContextTxInfo), TxOut (txOutDatum, txOutValue), mkValidatorScript)
+import Plutus.V2.Ledger.Contexts (TxInInfo (txInInfoResolved), TxInfo (txInfoInputs), getContinuingOutputs, txSignedBy)
 import PlutusTx qualified
 --import PlutusTx.List.Natural qualified as Natural
 --import PlutusTx.Natural (Natural)
@@ -72,7 +73,7 @@ hasCorrectToken MajorityMultiSignValidatorParams {asset} ctx expectedDatum =
   isJust result
   where
     continuing :: [TxOut]
-    continuing = Ledger.getContinuingOutputs ctx
+    continuing = getContinuingOutputs ctx
 
     checkAsset :: TxOut -> Maybe TxOut
     checkAsset txOut = if assetClassValueOf (txOutValue txOut) asset > 0 then Just txOut else Nothing
@@ -82,13 +83,13 @@ hasCorrectToken MajorityMultiSignValidatorParams {asset} ctx expectedDatum =
 
     result :: Maybe ()
     result = do
-      !assetTxOut <- traceIfNothing "Couldn't find asset" $ firstJust checkAsset continuing
-      let !datumHash = traceIfNothing "Continuing output does not have datum" $ txOutDatumHash assetTxOut
-          !expectedDatumHash =
-            traceIfNothing "Datum map does not have expectedDatum" $
-              findDatumHash (Datum $ PlutusTx.toBuiltinData expectedDatum) (scriptContextTxInfo ctx)
-      !_ <- traceIfFalse "Incorrect output datum" <$> liftA2 (==) datumHash expectedDatumHash
-      pure ()
+      assetTxOut <- traceIfNothing "Couldn't find asset" $ firstJust checkAsset continuing
+      datum <- traceIfNothing "Continuing output does not have inline datum" $
+            case txOutDatum assetTxOut of
+              OutputDatum datum -> Just datum
+              _ -> Nothing
+      let datumMatches = traceIfFalse "Incorrect output datum" $ datum == Datum (PlutusTx.toBuiltinData expectedDatum)
+      if datumMatches then Just () else Nothing
 
 -- | External function called by other contracts to ensure multisigs present
 {-# INLINEABLE checkMultisigned #-}
@@ -125,27 +126,21 @@ isUnderSizeLimit (UpdateKeysAct keys) MajorityMultiSignDatum {signers} =
   traceIfFalse "Datum too large" (length signers <= maximumSigners)
     && traceIfFalse "Redeemer too large" (length keys <= maximumSigners)
 
-inst :: MajorityMultiSignValidatorParams -> TypedScripts.TypedValidator MajorityMultiSign
-inst params =
-  TypedScripts.mkTypedValidator @MajorityMultiSign
-    ($$(PlutusTx.compile [||mkValidator||]) `PlutusTx.applyCode` PlutusTx.liftCode params)
-    $$(PlutusTx.compile [||wrap||])
+validator :: MajorityMultiSignValidatorParams -> Validator
+validator params = mkValidatorScript untyped
   where
-    wrap = TypedScripts.wrapValidator @MajorityMultiSignDatum @MajorityMultiSignRedeemer
+    untyped = ($$(PlutusTx.compile [||mkUntypedValidator . mkValidator||]) `PlutusTx.applyCode` PlutusTx.liftCode params)
 
-validator :: MajorityMultiSignValidatorParams -> Scripts.Validator
-validator = TypedScripts.validatorScript . inst
-
-validatorHash :: MajorityMultiSignValidatorParams -> Scripts.ValidatorHash
-validatorHash = TypedScripts.validatorHash . inst
+validatorHash :: MajorityMultiSignValidatorParams -> ValidatorHash
+validatorHash = Scripts.validatorHash . validator
 
 validatorAddress :: MajorityMultiSignValidatorParams -> Address
-validatorAddress = Ledger.scriptAddress . validator
+validatorAddress = mkValidatorAddress . validator
 
 -- | Gets the validator from an identifier
-validatorFromIdentifier :: MajorityMultiSignIdentifier -> Scripts.Validator
+validatorFromIdentifier :: MajorityMultiSignIdentifier -> Validator
 validatorFromIdentifier MajorityMultiSignIdentifier {asset} = validator $ MajorityMultiSignValidatorParams asset
 
 -- | Gets the validator hash from an identifier
-validatorHashFromIdentifier :: MajorityMultiSignIdentifier -> Scripts.ValidatorHash
+validatorHashFromIdentifier :: MajorityMultiSignIdentifier -> ValidatorHash
 validatorHashFromIdentifier MajorityMultiSignIdentifier {asset} = validatorHash $ MajorityMultiSignValidatorParams asset

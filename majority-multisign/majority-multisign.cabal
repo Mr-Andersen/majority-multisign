@@ -86,6 +86,7 @@ library
     --, plutus-numeric
     --, plutus-pab
     --, plutus-pretty
+    , plutus-script-utils
     , plutus-tx
     , plutus-tx-plugin
     --, plutus-use-cases

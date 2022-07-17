@@ -35,15 +35,16 @@ import PlutusTx qualified
 import PlutusTx.AssocMap qualified as AssocMap
 import PlutusTx.Prelude hiding (Monoid (..), Semigroup (..))
 
-import Ledger (CurrencySymbol, PaymentPubKeyHash, TxId, TxOutRef (..), getCardanoTxId, pubKeyHashAddress)
+-- import Ledger (CurrencySymbol, PaymentPubKeyHash, TxId, TxOutRef (..), getCardanoTxId, pubKeyHashAddress)
+import Ledger (PaymentPubKeyHash, pubKeyHashAddress, getCardanoTxId)
 import Ledger.Constraints qualified as Constraints
-import Ledger.Scripts
 import Ledger.Typed.Scripts qualified as Scripts
 import Ledger.Value (TokenName, Value)
 import Ledger.Value qualified as Value
 import Plutus.Contract as Contract
 import Plutus.Contract.Wallet (getUnspentOutput)
 import Plutus.Contracts.Scripts1 (scriptCurrencySymbol)
+import Plutus.V2.Ledger.Api (CurrencySymbol, MintingPolicy, TxId, TxOutRef (TxOutRef), mkMintingPolicyScript)
 import Schema (ToSchema)
 import Prelude qualified as Haskell  
 import Prelude (Semigroup (..))
