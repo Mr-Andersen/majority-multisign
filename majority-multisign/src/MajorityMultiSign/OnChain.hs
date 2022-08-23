@@ -26,7 +26,7 @@ import MajorityMultiSign.Schema (
 import Plutus.Script.Utils.V2.Address (mkValidatorAddress)
 import Plutus.Script.Utils.V2.Scripts (ValidatorHash)
 import Plutus.Script.Utils.V2.Scripts qualified as Scripts (validatorHash)
-import Plutus.Script.Utils.V2.Scripts.Validators (mkUntypedValidator)
+import Plutus.Script.Utils.V2.Typed.Scripts.Validators (mkUntypedValidator)
 import Plutus.V1.Ledger.Value (assetClassValueOf)
 import Plutus.V2.Ledger.Api (Address, Datum(Datum), OutputDatum(OutputDatum), Validator, ScriptContext (scriptContextTxInfo), TxOut (txOutDatum, txOutValue), mkValidatorScript)
 import Plutus.V2.Ledger.Contexts (TxInInfo (txInInfoResolved), TxInfo (txInfoInputs), getContinuingOutputs, txSignedBy)

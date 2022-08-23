@@ -11,7 +11,7 @@ module MajorityMultiSign.Contracts (
   submitSignedTxConstraintsWith,
 ) where
 
-import Cardano.Prelude (foldMap, rightToMaybe, subsequences, (<>))
+import Cardano.Prelude (foldMap, subsequences, (<>))
 import Control.Monad (void)
 import Data.Bifunctor (bimap)
 import Data.Kind (Type)
@@ -93,7 +93,7 @@ initialize pkh toObsState dat = do
       oneshotAsset = assetClass oneshotCS multiSignTokenName
       params :: MajorityMultiSignValidatorParams
       params = MajorityMultiSignValidatorParams oneshotAsset
-      lookups = Constraints.otherScript $ validator params
+      lookups = Constraints.plutusV2OtherScript $ validator params
       tx =
         Constraints.mustPayToOtherScript
           (validatorHash $ validator params)
@@ -182,7 +182,7 @@ prepareTxForSigning mms lookups tx = do
       lookups' :: ScriptLookups Any
       lookups' =
         lookups
-          <> Constraints.otherScript (validatorFromIdentifier mms)
+          <> Constraints.plutusV2OtherScript (validatorFromIdentifier mms)
           <> Constraints.unspentOutputs (uncurry Map.singleton txOutData)
       tx' :: TxConstraints BuiltinData BuiltinData
       tx' =
@@ -215,7 +215,7 @@ setSignatures SetSignaturesParams {mmsIdentifier, newKeys, pubKeys} = do
       newKeysDiff :: [PaymentPubKeyHash]
       newKeysDiff = newKeys \\ signerList
       lookups =
-        Constraints.otherScript (validatorFromIdentifier mmsIdentifier)
+        Constraints.plutusV2OtherScript (validatorFromIdentifier mmsIdentifier)
           <> Constraints.unspentOutputs (uncurry Map.singleton txOutData)
           <> foldMap Constraints.paymentPubKey pubKeys
           <> Constraints.otherData datum
@@ -267,4 +267,4 @@ maybeToError err = maybe (throwError $ OtherContractError err) return
 -- | Extracts the datum from a ChainIndexTxOut
 getChainIndexTxOutDatum :: ChainIndexTxOut -> Maybe Datum
 getChainIndexTxOutDatum Ledger.PublicKeyChainIndexTxOut {} = Nothing
-getChainIndexTxOutDatum Ledger.ScriptChainIndexTxOut {_ciTxOutDatum = eDatum} = rightToMaybe eDatum
+getChainIndexTxOutDatum Ledger.ScriptChainIndexTxOut {_ciTxOutScriptDatum = eDatum} = snd eDatum
