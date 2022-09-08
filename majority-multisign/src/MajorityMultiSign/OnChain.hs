@@ -5,6 +5,8 @@
 module MajorityMultiSign.OnChain (
   checkMultisigned,
   mkValidator,
+  mkValidator',
+  script,
   validator,
   validatorAddress,
   validatorFromIdentifier,
@@ -28,9 +30,11 @@ import Plutus.Script.Utils.V2.Scripts (ValidatorHash)
 import Plutus.Script.Utils.V2.Scripts qualified as Scripts (validatorHash)
 import Plutus.Script.Utils.V2.Typed.Scripts.Validators (mkUntypedValidator)
 import Plutus.V1.Ledger.Value (assetClassValueOf)
-import Plutus.V2.Ledger.Api (Address, Datum(Datum), OutputDatum(OutputDatum), Validator, ScriptContext (scriptContextTxInfo), TxOut (txOutDatum, txOutValue), mkValidatorScript)
+import Plutus.V2.Ledger.Api (Address, Datum (Datum), OutputDatum (OutputDatum), Script, ScriptContext (scriptContextTxInfo), TxOut (txOutDatum, txOutValue), Validator, fromCompiledCode, mkValidatorScript)
 import Plutus.V2.Ledger.Contexts (TxInInfo (txInInfoResolved), TxInfo (txInfoInputs), getContinuingOutputs, txSignedBy)
+import PlutusTx (fromBuiltinData)
 import PlutusTx qualified
+
 --import PlutusTx.List.Natural qualified as Natural
 --import PlutusTx.Natural (Natural)
 import PlutusTx.Prelude
@@ -85,9 +89,9 @@ hasCorrectToken MajorityMultiSignValidatorParams {asset} ctx expectedDatum =
     result = do
       assetTxOut <- traceIfNothing "Couldn't find asset" $ firstJust checkAsset continuing
       datum <- traceIfNothing "Continuing output does not have inline datum" $
-            case txOutDatum assetTxOut of
-              OutputDatum datum -> Just datum
-              _ -> Nothing
+        case txOutDatum assetTxOut of
+          OutputDatum datum -> Just datum
+          _ -> Nothing
       let datumMatches = traceIfFalse "Incorrect output datum" $ datum == Datum (PlutusTx.toBuiltinData expectedDatum)
       if datumMatches then Just () else Nothing
 
@@ -114,7 +118,7 @@ isSufficientlySigned red dat@MajorityMultiSignDatum {signers} ctx =
     signersPresent, signersUnique :: [PaymentPubKeyHash]
     signersPresent = filter (txSignedBy (scriptContextTxInfo ctx) . unPaymentPubKeyHash) signersUnique
     signersUnique = nub signers
-    minSigners :: Integer 
+    minSigners :: Integer
     minSigners = getMinSigners signersUnique
 
 -- | Checks the validator datum fits under the size limit
@@ -144,3 +148,21 @@ validatorFromIdentifier MajorityMultiSignIdentifier {asset} = validator $ Majori
 -- | Gets the validator hash from an identifier
 validatorHashFromIdentifier :: MajorityMultiSignIdentifier -> ValidatorHash
 validatorHashFromIdentifier MajorityMultiSignIdentifier {asset} = validatorHash $ MajorityMultiSignValidatorParams asset
+
+{-# INLINEABLE mkValidator' #-}
+mkValidator' ::
+  BuiltinData ->
+  BuiltinData ->
+  BuiltinData ->
+  BuiltinData ->
+  ()
+mkValidator' params datum redeemer context =
+  check $
+    mkValidator
+      (fromMaybe (traceError "Failed to parse params") $ fromBuiltinData params)
+      (fromMaybe (traceError "Failed to parse datum") $ fromBuiltinData datum)
+      (fromMaybe (traceError "Failed to parse redeemer") $ fromBuiltinData redeemer)
+      (fromMaybe (traceError "Failed to parse context") $ fromBuiltinData context)
+
+script :: Script
+script = fromCompiledCode $$(PlutusTx.compile [||mkValidator'||])
