@@ -34,10 +34,8 @@ import Plutus.V2.Ledger.Api (Address, Datum (Datum), OutputDatum (OutputDatum), 
 import Plutus.V2.Ledger.Contexts (TxInInfo (txInInfoResolved), TxInfo (txInfoInputs), getContinuingOutputs, txSignedBy)
 import PlutusTx (fromBuiltinData)
 import PlutusTx qualified
-
---import PlutusTx.List.Natural qualified as Natural
---import PlutusTx.Natural (Natural)
 import PlutusTx.Prelude
+import Utils (err, foldResult)
 
 {-# INLINEABLE mkValidator #-}
 mkValidator ::
@@ -150,19 +148,14 @@ validatorHashFromIdentifier :: MajorityMultiSignIdentifier -> ValidatorHash
 validatorHashFromIdentifier MajorityMultiSignIdentifier {asset} = validatorHash $ MajorityMultiSignValidatorParams asset
 
 {-# INLINEABLE mkValidator' #-}
-mkValidator' ::
-  BuiltinData ->
-  BuiltinData ->
-  BuiltinData ->
-  BuiltinData ->
-  ()
+mkValidator' :: BuiltinData -> BuiltinData -> BuiltinData -> BuiltinData -> ()
 mkValidator' params datum redeemer context =
-  check $
+  foldResult traceError check $
     mkValidator
-      (fromMaybe (traceError "Failed to parse params") $ fromBuiltinData params)
-      (fromMaybe (traceError "Failed to parse datum") $ fromBuiltinData datum)
-      (fromMaybe (traceError "Failed to parse redeemer") $ fromBuiltinData redeemer)
-      (fromMaybe (traceError "Failed to parse context") $ fromBuiltinData context)
+      <$> (maybe (err "Failed to parse params") pure $ fromBuiltinData params)
+      <*> (maybe (err "Failed to parse datum") pure $ fromBuiltinData datum)
+      <*> (maybe (err "Failed to parse redeemer") pure $ fromBuiltinData redeemer)
+      <*> (maybe (err "Failed to parse context") pure $ fromBuiltinData context)
 
 script :: Script
 script = fromCompiledCode $$(PlutusTx.compile [||mkValidator'||])

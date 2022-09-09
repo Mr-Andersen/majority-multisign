@@ -66,6 +66,8 @@ library
     MajorityMultiSign.Contracts
     MajorityMultiSign.OnChain
     MajorityMultiSign.Schema
+  other-modules:
+    Utils
 
   build-depends:
     , aeson                      ^>=2.0.2.0
